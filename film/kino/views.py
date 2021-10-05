@@ -2,7 +2,13 @@ from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .serializers import MovieListSerializer, MovieDetailSerializer, ReviewCreateSerializer, ReviewListSerializer
+from .serializers import (
+    MovieListSerializer,
+    MovieDetailSerializer,
+    ReviewCreateSerializer,
+    ReviewListSerializer,
+    CreateRatingSerializer
+    )
 from .models import Movie, Review
 
 
@@ -35,3 +41,21 @@ class ReviewListView(APIView):
         reviews = Review.objects.all()
         serializer = ReviewListSerializer(reviews, many=True)
         return Response(serializer.data)
+
+
+class AddStarRatingView(APIView):
+    def get_client_ip(self, request):
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+    def post(self, request):
+        serializer = CreateRatingSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(ip=self.get_client_ip(request))
+            return Response(status=201)
+        else:
+            return Response(status=400)
