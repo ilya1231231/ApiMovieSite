@@ -1,7 +1,7 @@
-from django import forms
+
 from django.contrib import admin
-from django.utils.safestring import mark_safe
-from ckeditor_uploader.widgets import CKEditorUploadingWidget
+
+
 
 from .models import Category, Genre, Movie, MovieShots, Actor, Rating, RatingStar, Review
 

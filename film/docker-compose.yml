@@ -1,0 +1,28 @@
+version: '3.7'
+
+services:
+  dm_db:
+    image: postgres:14
+    volumes:
+      - pg_data:/var/lib/postgresql/data/
+    environment:
+      POSTGRES_PASSWORD: trine1334123
+      POSTGRES_USER: postgres
+      POSTGRES_DB: films
+  django:
+    container_name: dm_movie
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    command:  bash -c "python /usr/src/dm_rest/manage.py migrate --noinput &&
+              python /usr/src/dm_rest/manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/usr/src/dm_rest
+    ports:
+      - 8000:8000
+    depends_on:
+      - dm_db
+
+
+volumes:
+  pg_data:
