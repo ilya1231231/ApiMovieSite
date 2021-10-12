@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.db import models
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -7,15 +8,35 @@ from .serializers import (
     MovieDetailSerializer,
     ReviewCreateSerializer,
     ReviewListSerializer,
-    CreateRatingSerializer
+    CreateRatingSerializer,
+    ActorListSerializer,
+    ActorDetailSerializer
     )
-from .models import Movie, Review
+from .models import Movie, Review, Actor
+from .service import get_client_ip
+from rest_framework import generics
+
+
+class ActorListView(generics.ListAPIView):
+    '''Вывод всех актеров или режиссеров'''
+    queryset = Actor.objects.all()
+    serializer_class = ActorListSerializer
+
+class ActorRetriveView(generics.RetrieveAPIView):
+    '''Вывод всех актеров или режиссеров'''
+    queryset = Actor.objects.all()
+    serializer_class = ActorDetailSerializer
 
 
 class MovieListView(APIView):
 
     def get(self, request):
-        movies = Movie.objects.filter(draft=False)
+        '''1.смотрим поставил ли юзер с заданным ip оценку 2.Вычисляем среднее значение всех оценок '''
+        movies = Movie.objects.filter(draft=False).annotate(
+            rating_user=models.Count("ratings", filter=models.Q(ratings__ip=get_client_ip(request)))
+        ).annotate(
+            middle_star=models.Sum(models.F('ratings__star')) / models.Count(models.F('ratings'))
+        )
         serializer = MovieListSerializer(movies, many=True)
         return Response(serializer.data)
 
@@ -44,18 +65,10 @@ class ReviewListView(APIView):
 
 
 class AddStarRatingView(APIView):
-    def get_client_ip(self, request):
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-        return ip
-
     def post(self, request):
         serializer = CreateRatingSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(ip=self.get_client_ip(request))
+            serializer.save(ip=get_client_ip(request))
             return Response(status=201)
         else:
             return Response(status=400)

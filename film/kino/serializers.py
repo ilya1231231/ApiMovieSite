@@ -1,5 +1,19 @@
-from .models import Movie, Review, Rating
+from .models import Movie, Review, Rating, Actor
 from rest_framework import serializers
+
+
+class ActorListSerializer(serializers.ModelSerializer):
+    '''Вывод всех актеров или режиссеров'''
+    class Meta:
+        model = Actor
+        fields = ('id', 'name', 'image')
+
+class ActorDetailSerializer(serializers.ModelSerializer):
+    '''Вывод всех актеров или режиссеров'''
+    class Meta:
+        model = Actor
+        fields = '__all__'
+
 
 class FilterReviewListSerializer(serializers.ListSerializer):
     '''Фильтр только для parent комментариев'''
@@ -9,10 +23,11 @@ class FilterReviewListSerializer(serializers.ListSerializer):
 
 class MovieListSerializer(serializers.ModelSerializer):
     '''Вывод всех фильмов'''
-
+    rating_user = serializers.BooleanField()
+    middle_star = serializers.FloatField()
     class Meta:
         model = Movie
-        fields = ('title', 'tagline', 'category')
+        fields = ('title', 'tagline', 'category', 'rating_user', 'middle_star')
 
 class CreateRatingSerializer(serializers.ModelSerializer):
     class Meta:
@@ -53,9 +68,10 @@ class ReviewListSerializer(serializers.ModelSerializer):
 
 class MovieDetailSerializer(serializers.ModelSerializer):
     '''Отдельный фильм'''
+    '''Добавил сериализатор для актеров и режисссеров'''
     category = serializers.SlugRelatedField(slug_field='name', read_only=True)
-    directors = serializers.SlugRelatedField(slug_field='name', read_only=True, many=True)
-    actors = serializers.SlugRelatedField(slug_field='name', read_only=True, many=True)
+    directors = ActorDetailSerializer( read_only=True, many=True)
+    actors = ActorDetailSerializer( read_only=True, many=True)
     genres = serializers.SlugRelatedField(slug_field='name', read_only=True, many=True)
     reviews = ReviewListSerializer(many=True)
     # related name из модели Review на поле movies(по нему можно обратиться к полю Review
